@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import {
   updateLeadStatusAction,
   anonymizeLeadAction,
-  type LeadActionState,
 } from "@/app/actions/leads";
 import type { LeadStatus } from "@/types/database";
 

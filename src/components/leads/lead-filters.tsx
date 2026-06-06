@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { TREATMENT_OPTIONS } from "@/lib/validations/enquiry";
 import type { LeadStatus } from "@/types/database";
 
@@ -81,12 +82,12 @@ export function LeadFilters({ q, status, treatment }: LeadFiltersProps) {
 
       {/* Clear */}
       {hasFilters && (
-        <a
+        <Link
           href="/app/leads"
           className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
         >
           Clear filters
-        </a>
+        </Link>
       )}
     </form>
   );

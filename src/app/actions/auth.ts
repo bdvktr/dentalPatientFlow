@@ -71,7 +71,7 @@ export async function signupAction(
   if (data.user && data.session) {
     // Email confirmation is disabled (dev/test environment).
     // Create the clinic immediately.
-    await setupClinicForNewUser(data.user.id, clinicName);
+    await setupClinicForNewUser(clinicName);
     redirect("/app/leads");
   }
 
@@ -94,15 +94,23 @@ export async function logoutAction(): Promise<void> {
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
 /**
- * Creates a clinic and assigns the given user as clinic_admin.
+ * Creates a clinic and assigns the current authenticated user as clinic_admin.
  * Called after signup (no email confirmation) or from the auth callback.
  * Uses the admin client (service role) because the user's profile exists
  * but has no clinic_id yet — the profiles INSERT policy blocks this.
+ *
+ * Security: userId is derived from the authenticated session, never from
+ * caller-supplied input. This prevents a forged Server Action invocation
+ * from creating or promoting a clinic for an arbitrary account.
  */
-export async function setupClinicForNewUser(
-  userId: string,
-  clinicName: string
-): Promise<void> {
+export async function setupClinicForNewUser(clinicName: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized: no authenticated session");
+
+  const userId = user.id;
   const admin = createAdminClient();
 
   const slug = generateSlug(clinicName);

@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       "My Clinic";
     // Uses the admin client — the user has no clinic_id yet so the
     // RLS UPDATE policy on profiles would otherwise block this.
-    await setupClinicForNewUser(data.user.id, clinicName);
+    await setupClinicForNewUser(clinicName);
   }
 
   const redirectUrl = next.startsWith("/") ? `${origin}${next}` : origin;

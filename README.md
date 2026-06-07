@@ -44,6 +44,7 @@ In the Supabase dashboard → **SQL Editor**, run each file in `supabase/migrati
 | `20240101000004_rls.sql` | Row Level Security policies |
 | `20240101000005_clinic_settings.sql` | Extended clinic settings columns |
 | `20240101000006_ai_activity.sql` | AI activity enum value |
+| `20240101000007_webhook_events.sql` | Webhook event enum values, deduplication columns |
 
 Or use the Supabase CLI:
 
@@ -76,11 +77,14 @@ Fill in all values:
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only. **Never expose to client.** |
 | `RESEND_API_KEY` | Yes* | From [resend.com](https://resend.com). App degrades gracefully if absent — no emails sent. |
 | `RESEND_FROM_EMAIL` | Yes* | Must be a verified domain/address in Resend, e.g. `noreply@yourclinic.com` |
+| `RESEND_WEBHOOK_SECRET` | Yes† | From Resend dashboard → Webhooks. Required for delivery tracking. |
 | `CRON_SECRET` | Yes | Any random string, e.g. `openssl rand -hex 32`. Used to authenticate cron requests. |
 | `OPENAI_API_KEY` | Optional | Enables AI reply drafts. App works without it — feature is disabled. |
 | `NEXT_PUBLIC_BASE_URL` | Yes | Full URL of your deployment, e.g. `https://yourapp.vercel.app` |
 
 *Required for follow-up emails to send. The app runs without them — emails are silently skipped.
+
+†Required in production for the Resend webhook endpoint to verify signatures and accept events. Without it the endpoint returns 503.
 
 ### 5. Create the first platform owner
 
@@ -125,12 +129,36 @@ The public enquiry form is at: `http://localhost:3000/c/<your-clinic-slug>/enqui
 
 1. Push to GitHub and connect the repo in Vercel
 2. Add all environment variables in **Vercel → Project → Settings → Environment Variables**
-3. Vercel cron jobs require the **Pro plan** or above
-4. The cron schedule is in `vercel.json` — runs hourly by default:
+3. Cron jobs are supported on all Vercel plans (Hobby included), with restrictions — see below
+4. The cron schedule is in `vercel.json` — runs once daily at 09:00 UTC by default:
    ```json
-   { "crons": [{ "path": "/api/cron/send-followups", "schedule": "0 * * * *" }] }
+   { "crons": [{ "path": "/api/cron/send-followups", "schedule": "0 9 * * *" }] }
    ```
 5. Set `NEXT_PUBLIC_BASE_URL` to your Vercel deployment URL
+
+---
+
+## Vercel Cron on Hobby plan
+
+> **Daily schedule is for Vercel Hobby/demo only. Use more frequent scheduling before production.**
+
+The MVP ships with a once-daily cron schedule (`0 9 * * *`) because **Vercel Hobby only supports cron jobs that run once per day**. Deploying a more frequent schedule (e.g. `0 * * * *`) causes the Vercel deployment to fail on Hobby.
+
+**What this means in practice:**
+
+- Follow-up tasks are checked and sent once per day, at approximately 09:00 UTC
+- A 24-hour follow-up template will send within 24–48 hours of the enquiry (not at the exact hour)
+- A 72-hour template may send up to 96 hours after the enquiry
+- This is acceptable for demos and early pilot testing — patients still receive all follow-ups, just not at precise hours
+
+**Before production or paid-pilot usage, upgrade to one of:**
+
+| Option | How |
+|---|---|
+| **Vercel Pro** | Change `vercel.json` schedule to `0 * * * *` (hourly) or `*/15 * * * *` (every 15 min) — Pro supports up to 2-minute intervals |
+| **External scheduler** | Use cron-job.org, Upstash Qstash, GitHub Actions scheduled workflow, or any cron service to `GET /api/cron/send-followups` with `Authorization: Bearer <CRON_SECRET>` |
+
+Keep `CRON_SECRET` configured in Vercel regardless of which option you choose. Redeploy after changing the cron schedule or environment variables.
 
 ---
 
@@ -181,6 +209,66 @@ curl -s http://localhost:3000/api/cron/send-followups \
 
 ---
 
+## Resend webhook (email delivery tracking)
+
+The route `POST /api/webhooks/resend` receives email lifecycle events from Resend and records them on the lead activity timeline.
+
+### Configure in Resend
+
+1. Go to [Resend dashboard](https://resend.com) → **Webhooks** → **Add endpoint**
+2. Set the endpoint URL to:
+   ```
+   https://your-domain.com/api/webhooks/resend
+   ```
+3. Subscribe to these events:
+   - `email.sent`
+   - `email.delivered`
+   - `email.delivery_delayed`
+   - `email.bounced`
+   - `email.complained`
+   - `email.opened`
+   - `email.clicked`
+   - `email.failed`
+4. Copy the **signing secret** that Resend shows after creation
+5. Set `RESEND_WEBHOOK_SECRET=whsec_...` in your environment
+6. Redeploy the app
+
+### How it works
+
+1. Verifies the `svix-id`, `svix-timestamp`, and `svix-signature` headers using the signing secret
+2. Returns `400/401` for missing or invalid signatures — no processing occurs
+3. Matches incoming events to existing sent emails via `resend_email_id`
+4. Deduplicates by `provider_event_id` (Svix delivery ID) — retries are safe
+5. Inserts a `message_events` row and a `lead_activity` entry when matched
+6. Skips events for anonymised leads (GDPR compliance)
+7. Returns `{ received, eventType, matched, deduplicated }` JSON
+
+### Local testing
+
+You need a public tunnel (e.g. ngrok) to receive webhooks during development:
+
+```bash
+ngrok http 3000
+# Copy the https URL, set it as the webhook endpoint in Resend
+# Set RESEND_WEBHOOK_SECRET in .env.local
+```
+
+Without `RESEND_WEBHOOK_SECRET` set, development mode skips signature verification so you can test with plain `curl`:
+
+```bash
+curl -s -X POST http://localhost:3000/api/webhooks/resend \
+  -H "Content-Type: application/json" \
+  -d '{"type":"email.delivered","data":{"email_id":"test_id","created_at":"2024-01-01T00:00:00Z"}}' | jq
+```
+
+### Notes
+
+- `email.sent` events from Resend are acknowledged but not re-recorded (the cron already records the send event)
+- Open and click tracking may be affected by email clients, proxies, and privacy tools — do not treat opens/clicks as confirmed human intent
+- IP addresses and user-agents from Resend events are **not stored** (GDPR / data minimisation)
+
+---
+
 ## Project structure
 
 ```
@@ -190,7 +278,8 @@ src/
 │   ├── api/
 │   │   ├── ai/          # AI reply draft route handler
 │   │   ├── cron/        # Follow-up email cron
-│   │   └── reports/     # CSV export route handler
+│   │   ├── reports/     # CSV export route handler
+│   │   └── webhooks/    # Resend email event webhook
 │   ├── app/             # Authenticated dashboard
 │   │   ├── admin/       # Platform owner admin area
 │   │   ├── leads/       # Lead list + lead detail

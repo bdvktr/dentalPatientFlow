@@ -38,16 +38,25 @@ export type FollowupTaskStatus = "pending" | "sent" | "cancelled" | "failed";
 
 export type MessageEventType =
   | "email_sent"
+  | "email_delivered"
   | "email_opened"
   | "email_clicked"
   | "email_bounced"
-  | "email_complained";
+  | "email_complained"
+  | "email_delivery_delayed"
+  | "email_failed";
 
 export type ActivityType =
   | "lead_created"
   | "status_changed"
   | "note_added"
   | "email_sent"
+  | "email_delivered"
+  | "email_opened"
+  | "email_clicked"
+  | "email_bounced"
+  | "email_complained"
+  | "email_delivery_delayed"
   | "email_failed"
   | "lead_archived"
   | "lead_anonymised"
@@ -150,6 +159,8 @@ export interface MessageEvent {
   clinic_id: string;
   event_type: MessageEventType;
   resend_email_id: string | null;
+  provider_event_id: string | null;
+  clicked_url: string | null;
   metadata: Json | null;
   occurred_at: string;
 }
@@ -314,6 +325,8 @@ export type Database = {
           clinic_id: string;
           event_type: MessageEventType;
           resend_email_id?: string | null;
+          provider_event_id?: string | null;
+          clicked_url?: string | null;
           metadata?: Json | null;
           occurred_at?: string;
         };

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireClinicAdmin } from "@/lib/auth";
+import { getBaseUrl } from "@/lib/env";
 import { ClinicSettingsForm } from "@/components/settings/clinic-settings-form";
 
 export const metadata: Metadata = {
@@ -21,9 +22,7 @@ export default async function SettingsPage() {
 
   if (!clinic) redirect("/app");
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
-  const enquiryUrl = `${baseUrl}/c/${clinic.slug}/enquiry`;
+  const enquiryUrl = `${getBaseUrl()}/c/${clinic.slug}/enquiry`;
 
   return (
     <ClinicSettingsForm clinic={clinic} enquiryUrl={enquiryUrl} />

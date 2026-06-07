@@ -29,9 +29,10 @@ ON CONFLICT (id) DO NOTHING;
 -- -----------------------------------------------------------
 -- Demo treatments
 -- -----------------------------------------------------------
-INSERT INTO public.treatments (clinic_id, name, type, description, is_active)
+INSERT INTO public.treatments (id, clinic_id, name, type, description, is_active)
 VALUES
   (
+    '00000000-0000-0000-0003-000000000001'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Dental Implants',
     'dental_implants',
@@ -39,6 +40,7 @@ VALUES
     true
   ),
   (
+    '00000000-0000-0000-0003-000000000002'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Invisalign',
     'invisalign',
@@ -46,6 +48,7 @@ VALUES
     true
   ),
   (
+    '00000000-0000-0000-0003-000000000003'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Teeth Whitening',
     'whitening',
@@ -53,6 +56,7 @@ VALUES
     true
   ),
   (
+    '00000000-0000-0000-0003-000000000004'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Cosmetic Dentistry',
     'cosmetic',
@@ -60,13 +64,14 @@ VALUES
     true
   ),
   (
+    '00000000-0000-0000-0003-000000000005'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     'Smile Makeover',
     'smile_makeover',
     'Comprehensive transformation combining multiple treatments.',
     true
   )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------
 -- Demo follow-up email templates
@@ -219,10 +224,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Demo lead activity entries
 -- -----------------------------------------------------------
 INSERT INTO public.lead_activity
-  (lead_id, clinic_id, actor_id, activity_type, description)
+  (id, lead_id, clinic_id, actor_id, activity_type, description)
 VALUES
   -- Bob was contacted
   (
+    '00000000-0000-0000-0004-000000000001'::uuid,
     '00000000-0000-0000-0002-000000000002'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
@@ -231,6 +237,7 @@ VALUES
   ),
   -- Bob – staff note
   (
+    '00000000-0000-0000-0004-000000000002'::uuid,
     '00000000-0000-0000-0002-000000000002'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
@@ -239,6 +246,7 @@ VALUES
   ),
   -- Carol moved to booked
   (
+    '00000000-0000-0000-0004-000000000003'::uuid,
     '00000000-0000-0000-0002-000000000003'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
@@ -247,13 +255,14 @@ VALUES
   ),
   -- Carol – booking confirmation note
   (
+    '00000000-0000-0000-0004-000000000004'::uuid,
     '00000000-0000-0000-0002-000000000003'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
     NULL,
     'note_added',
     'Patient confirmed via phone. Consultation booked for next Tuesday at 2 pm.'
   )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------
 -- NOTE: Demo user profiles are not seeded here because profiles

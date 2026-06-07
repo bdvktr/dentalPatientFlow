@@ -18,6 +18,12 @@ const ACTIVITY_LABELS: Record<ActivityType, string> = {
   status_changed: "Status changed",
   note_added: "Note",
   email_sent: "Email sent",
+  email_delivered: "Delivered",
+  email_opened: "Opened",
+  email_clicked: "Link clicked",
+  email_bounced: "Bounced",
+  email_complained: "Spam complaint",
+  email_delivery_delayed: "Delivery delayed",
   email_failed: "Email failed",
   lead_archived: "Archived",
   lead_anonymised: "Anonymised",
@@ -28,10 +34,13 @@ const ACTIVITY_LABELS: Record<ActivityType, string> = {
 
 const EMAIL_EVENT_LABELS: Record<MessageEventType, string> = {
   email_sent: "Email sent",
+  email_delivered: "Email delivered",
   email_opened: "Email opened",
   email_clicked: "Link clicked",
   email_bounced: "Email bounced",
   email_complained: "Spam complaint",
+  email_delivery_delayed: "Delivery delayed",
+  email_failed: "Email failed",
 };
 
 function formatDateTime(dateStr: string) {
@@ -299,8 +308,21 @@ export default async function LeadDetailPage({
                     {emailEvents.map((event) => (
                       <tr key={event.id}>
                         <td className="px-4 py-2.5">
-                          {EMAIL_EVENT_LABELS[event.event_type as MessageEventType] ??
-                            event.event_type}
+                          <div>
+                            {EMAIL_EVENT_LABELS[event.event_type as MessageEventType] ??
+                              event.event_type}
+                            {event.clicked_url && (
+                              <a
+                                href={event.clicked_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-0.5 block truncate max-w-xs text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                title={event.clicked_url}
+                              >
+                                {event.clicked_url}
+                              </a>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-2.5 text-muted-foreground">
                           {formatDateTime(event.occurred_at)}
@@ -310,6 +332,11 @@ export default async function LeadDetailPage({
                   </tbody>
                 </table>
               </div>
+
+              <p className="mt-2 text-xs text-muted-foreground">
+                Email open and click tracking can be affected by privacy tools and
+                may not always reflect direct patient action.
+              </p>
             </section>
           )}
         </div>
@@ -339,6 +366,12 @@ function ActivityDot({ type }: { type: ActivityType }) {
     status_changed: "bg-amber-400",
     note_added: "bg-gray-400",
     email_sent: "bg-green-400",
+    email_delivered: "bg-green-500",
+    email_opened: "bg-sky-400",
+    email_clicked: "bg-sky-500",
+    email_bounced: "bg-red-500",
+    email_complained: "bg-red-600",
+    email_delivery_delayed: "bg-amber-400",
     email_failed: "bg-red-400",
     lead_archived: "bg-gray-400",
     lead_anonymised: "bg-amber-400",

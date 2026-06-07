@@ -10,12 +10,13 @@ import {
 
 interface EnquiryFormProps {
   clinicId: string;
+  clinicName: string;
   bookingUrl?: string;
 }
 
 const INITIAL_STATE: EnquiryState = { status: "idle" };
 
-export function EnquiryForm({ clinicId, bookingUrl }: EnquiryFormProps) {
+export function EnquiryForm({ clinicId, clinicName, bookingUrl }: EnquiryFormProps) {
   const [state, formAction, isPending] = useActionState(
     submitEnquiryAction.bind(null, clinicId),
     INITIAL_STATE
@@ -31,19 +32,23 @@ export function EnquiryForm({ clinicId, bookingUrl }: EnquiryFormProps) {
         <div>
           <h2 className="text-lg font-semibold">Enquiry received</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Thank you for your enquiry. A member of our team will be in touch
-            shortly to arrange a convenient time.
+            Thank you for contacting {clinicName}. A member of our team will
+            be in touch shortly to arrange a convenient time.
           </p>
         </div>
-        {bookingUrl && (
+        {bookingUrl ? (
           <a
             href={bookingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            className="inline-block rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
           >
-            Visit our website to book online →
+            Book your consultation →
           </a>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            The clinic team will contact you soon.
+          </p>
         )}
         <p className="text-xs text-muted-foreground">
           If you have an urgent query please call the clinic directly.

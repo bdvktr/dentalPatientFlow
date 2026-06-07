@@ -60,6 +60,7 @@ export default async function EnquiryPage({
           <div className="rounded-lg border border-border bg-card shadow-sm">
             <EnquiryForm
               clinicId={clinic.id}
+              clinicName={clinic.name}
               bookingUrl={clinic.booking_url ?? clinic.website ?? undefined}
             />
           </div>

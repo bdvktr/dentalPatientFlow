@@ -25,6 +25,10 @@ export function AiReplyAssistant({
         body: JSON.stringify({ leadId }),
       });
       const data = (await res.json()) as { draft?: string; error?: string };
+      if (res.status === 429) {
+        setError("The AI assistant is temporarily busy. Please try again in a moment.");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate draft.");
       setDraft(data.draft ?? "");
     } catch (err) {

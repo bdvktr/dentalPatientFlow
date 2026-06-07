@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildFollowupEmailHtml } from "@/lib/email/followup-email";
 
+// Daily schedule (vercel.json: "0 9 * * *") is for Vercel Hobby/demo only.
+// Use more frequent scheduling (hourly or every 15 min) before production.
+// See README → "Vercel Cron on Hobby plan" for upgrade options.
+
 // Number of tasks processed per cron invocation.
 // Keeps each run well within Vercel's function timeout limits.
 const BATCH_SIZE = 50;

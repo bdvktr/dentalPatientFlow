@@ -113,6 +113,13 @@ export async function POST(request: Request) {
 
     draft = completion.choices[0]?.message?.content?.trim() ?? "";
   } catch (err) {
+    const httpStatus =
+      err !== null && typeof err === "object" && "status" in err
+        ? (err as { status: unknown }).status
+        : undefined;
+    if (httpStatus === 429) {
+      return Response.json({ error: "rate_limited" }, { status: 429 });
+    }
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("[ai/generate-reply] OpenAI error:", msg);
     return Response.json({ error: "Failed to generate draft. Please try again." }, { status: 502 });

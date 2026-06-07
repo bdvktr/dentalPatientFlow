@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -11,7 +12,13 @@ export const metadata: Metadata = {
  * or if clinic creation failed. Clinic assignment is handled in Phase 9.
  */
 export default async function OnboardingPage() {
-  await requireAuth(); // ensures they are authenticated
+  const user = await requireAuth();
+
+  // Already set up — no reason to be on onboarding.
+  // Platform owners manage clinics via /app/admin, not onboarding.
+  if (user.profile.clinic_id || user.profile.role === "platform_owner") {
+    redirect("/app");
+  }
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-6 py-12 bg-muted/30">

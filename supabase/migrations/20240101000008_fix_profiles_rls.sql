@@ -10,44 +10,87 @@
 --   accessible, not that the new values being written are safe.
 --
 -- Fix:
---   Drop and recreate the policy with a WITH CHECK clause that freezes
---   role and clinic_id for non-platform-owners. They may still update
---   safe profile fields (e.g. full_name) but cannot self-promote.
---   platform_owner retains full update capability for admin operations.
+--   Drop the single combined policy and replace it with two clearly-scoped
+--   policies using the existing SECURITY DEFINER helper functions.
+--   This matches the pattern used by every other policy in this codebase
+--   and avoids raw subqueries inside RLS policy expressions.
 --
--- Non-destructive: this only TIGHTENS an existing policy. No data is
--- altered, no rows are deleted, no tables are dropped. The USING clause
--- (which row can be modified) is unchanged — only WITH CHECK (what new
--- values are permitted) is added. Any platform_owner reads/writes are
--- unaffected.
+--   Policy 1 — platform_owner: unrestricted update on any profile row.
+--   Policy 2 — self-update: own row only; role and clinic_id are frozen.
+--
+-- Why SECURITY DEFINER helpers instead of raw subqueries:
+--   get_current_user_role() and get_current_user_clinic_id() are declared
+--   SECURITY DEFINER in migration 002. They read public.profiles bypassing
+--   RLS, which avoids the non-obvious re-entry that a raw subquery inside
+--   an RLS policy expression would cause. All other policies in this file
+--   use the same helpers for this reason.
+--
+-- Why STABLE matters for correctness:
+--   Both helpers are STABLE. PostgreSQL evaluates them against the
+--   transaction snapshot (READ COMMITTED: start of the UPDATE statement).
+--   The uncommitted modification is not visible to the snapshot, so the
+--   helpers return the PRE-UPDATE stored values of role and clinic_id.
+--   The WITH CHECK then compares NEW.role/clinic_id against the old values.
+--   A mismatch → WITH CHECK returns FALSE → write is rejected by PostgreSQL.
+--
+-- Non-destructive: no data is altered, no tables are dropped, no indexes
+--   are removed. Only the profiles UPDATE policy is dropped and replaced.
+--   The USING clause (which rows can be selected for modification) is
+--   semantically identical to the original policy.
 -- =============================================================
 
-DROP POLICY IF EXISTS "profiles_update" ON public.profiles;
+-- Drop the original single policy (and any prior attempt at split policies).
+DROP POLICY IF EXISTS "profiles_update"              ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_platform_owner" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_self"         ON public.profiles;
 
--- Users can update their own profile (name, etc.).
--- platform_owner can update any profile (to set role or clinic_id).
--- Non-platform-owner users CANNOT change role or clinic_id — those
--- columns must only be changed via the service-role admin client
--- (i.e. the setupClinicForNewUser server action or platform admin UI).
-CREATE POLICY "profiles_update"
+-- =============================================================
+-- Policy 1: platform_owner profile management
+-- =============================================================
+-- Expected behavior:
+--   Platform owners can update any profile row with any values,
+--   including role and clinic_id. This is how the admin UI assigns
+--   roles and links users to clinic workspaces.
+--
+-- USING  — selects which rows the platform_owner may target.
+-- WITH CHECK — permits any new values to be written (no column restrictions).
+CREATE POLICY "profiles_update_platform_owner"
   ON public.profiles FOR UPDATE
-  USING (
-    public.is_platform_owner()
-    OR id = auth.uid()
-  )
+  USING  (public.is_platform_owner())
+  WITH CHECK (public.is_platform_owner());
+
+-- =============================================================
+-- Policy 2: self-update (non-privileged fields only)
+-- =============================================================
+-- Expected behavior:
+--   An authenticated user may update their own profile row, but only
+--   non-privileged fields such as full_name. The two privileged columns
+--   are immutable for non-platform-owners:
+--
+--   • role      — must equal the user's current stored role.
+--                 Prevents self-escalation (e.g. setting role = 'platform_owner').
+--   • clinic_id — must equal the user's current stored clinic_id (NULL-safe).
+--                 Prevents tenant-hopping (e.g. reassigning to another clinic).
+--
+-- How the immutability check works:
+--   In a WITH CHECK expression, bare column references (role, clinic_id)
+--   refer to the NEW row being written. The helper functions return the
+--   PRE-UPDATE stored values (they are STABLE SECURITY DEFINER functions
+--   that read public.profiles against the statement-start snapshot).
+--   If the caller tries to change role or clinic_id, NEW.role ≠ stored role,
+--   WITH CHECK returns FALSE, and PostgreSQL rejects the write.
+--
+-- IS NOT DISTINCT FROM on clinic_id:
+--   Uses NULL-safe equality so a user whose clinic_id is NULL can update
+--   other fields without the check failing (NULL = NULL is not TRUE in SQL).
+--
+-- USING  — restricts update target to the user's own row only.
+-- WITH CHECK — enforces role and clinic_id are unchanged.
+CREATE POLICY "profiles_update_self"
+  ON public.profiles FOR UPDATE
+  USING  (id = auth.uid())
   WITH CHECK (
-    -- platform_owner: unrestricted writes on any row
-    public.is_platform_owner()
-    OR (
-      -- Non-platform-owners: can only update their own row,
-      -- and role + clinic_id must remain unchanged.
-      -- IS NOT DISTINCT FROM handles NULL clinic_id correctly.
-      id = auth.uid()
-      AND role = (
-        SELECT role FROM public.profiles WHERE id = auth.uid()
-      )
-      AND clinic_id IS NOT DISTINCT FROM (
-        SELECT clinic_id FROM public.profiles WHERE id = auth.uid()
-      )
-    )
+    id = auth.uid()
+    AND role      = public.get_current_user_role()          -- immutable for non-owners
+    AND clinic_id IS NOT DISTINCT FROM public.get_current_user_clinic_id()  -- immutable, NULL-safe
   );

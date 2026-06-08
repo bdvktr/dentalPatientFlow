@@ -1,48 +1,77 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { setupClinicForNewUser } from "@/app/actions/auth";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 /**
- * Handles the Supabase email confirmation redirect.
- * Supabase sends the user to /auth/callback?code=xxx after they
- * click the confirmation link in their inbox.
+ * Supabase auth callback handler — covers two flows:
  *
- * After exchanging the code for a session, we check whether the
- * user's profile has a clinic_id. If not, we create one from the
- * clinic_name stored in user metadata during signup.
+ * 1. token_hash + type (recovery, magic link, email OTP):
+ *    Supabase embeds token_hash and type in the recovery email link.
+ *    We call verifyOtp to establish the session, then redirect.
+ *    For type=recovery we default to /auth/update-password.
+ *
+ * 2. code (PKCE — signup email confirmation):
+ *    Supabase sends code after the user clicks the confirmation link.
+ *    We call exchangeCodeForSession, set up the clinic if needed,
+ *    and redirect to /app (or an explicit next param).
+ *    Recovery emails that include next=/auth/update-password also use
+ *    this branch when the Supabase Recovery URL includes that next param.
+ *
+ * Open-redirect protection: next is only used if it starts with "/".
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app/leads";
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as EmailOtpType | null;
+  const next = searchParams.get("next");
 
-  if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=missing_code`);
-  }
+  // Reject next values that are not relative paths to prevent open redirects.
+  const safeNext = (fallback: string) =>
+    next?.startsWith("/") ? next : fallback;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error || !data.user) {
-    return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  // ── token_hash flow (password recovery, email OTP) ──────────────────────
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (error) {
+      return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+    }
+    const defaultPath = type === "recovery" ? "/auth/update-password" : "/app";
+    return NextResponse.redirect(`${origin}${safeNext(defaultPath)}`);
   }
 
-  // Check if the profile already has a clinic assigned.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("clinic_id")
-    .eq("id", data.user.id)
-    .single();
+  // ── PKCE code flow (signup confirmation + recovery via forgot-password) ──
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error || !data.user) {
+      return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+    }
 
-  if (!profile?.clinic_id) {
-    const clinicName =
-      (data.user.user_metadata?.clinic_name as string | undefined) ??
-      "My Clinic";
-    // Uses the admin client — the user has no clinic_id yet so the
-    // RLS UPDATE policy on profiles would otherwise block this.
-    await setupClinicForNewUser(clinicName);
+    // If an explicit next was provided (e.g. next=/auth/update-password from
+    // the forgot-password page), honour it without running clinic setup.
+    if (next?.startsWith("/")) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+
+    // No next param — assume signup confirmation. Set up clinic if needed.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("clinic_id")
+      .eq("id", data.user.id)
+      .single();
+
+    if (!profile?.clinic_id) {
+      const clinicName =
+        (data.user.user_metadata?.clinic_name as string | undefined) ??
+        "My Clinic";
+      await setupClinicForNewUser(clinicName);
+    }
+
+    return NextResponse.redirect(`${origin}/app`);
   }
 
-  const redirectUrl = next.startsWith("/") ? `${origin}${next}` : origin;
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(`${origin}/login?error=missing_code`);
 }

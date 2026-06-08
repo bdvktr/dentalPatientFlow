@@ -143,7 +143,7 @@ export function AppShell({
       {/* ── Desktop sidebar ─────────────────────────────────────────────── */}
       <aside className="hidden md:flex w-60 flex-col border-r border-sidebar-border bg-sidebar">
         <div className="flex h-16 items-center border-b border-sidebar-border px-5">
-          <Link href="/app/leads" className="text-sm font-semibold leading-tight">
+          <Link href="/app" className="text-sm font-semibold leading-tight">
             Dental PatientFlow AI
           </Link>
         </div>
@@ -165,7 +165,7 @@ export function AppShell({
         >
           <Menu size={20} />
         </button>
-        <Link href="/app/leads" className="text-sm font-semibold">
+        <Link href="/app" className="text-sm font-semibold">
           Dental PatientFlow AI
         </Link>
       </div>
@@ -190,7 +190,7 @@ export function AppShell({
       >
         <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
           <Link
-            href="/app/leads"
+            href="/app"
             className="text-sm font-semibold"
             onClick={() => setDrawerOpen(false)}
           >

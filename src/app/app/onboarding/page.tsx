@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -27,6 +28,9 @@ export default async function OnboardingPage() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-6 py-12 bg-muted/30">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 shadow-sm text-center">
+        <div className="mb-4 inline-flex items-center justify-center rounded-full bg-blue-50 p-3">
+          <Building2 className="h-6 w-6 text-blue-600" />
+        </div>
         <h1 className="text-xl font-semibold">Almost there</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           Your account is active but hasn&apos;t been linked to a clinic

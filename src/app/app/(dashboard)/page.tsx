@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import { requireClinicAccess, isPlatformOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/leads/status-badge";
@@ -82,7 +83,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex-1 space-y-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         {isPlatformOwner(user) && (
           <p className="mt-1 text-xs text-muted-foreground">
             Platform owner view — aggregate data across all clinics.
@@ -108,7 +109,7 @@ export default async function DashboardPage() {
         {/* Recent leads */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Recent enquiries</h2>
+            <h2 className="text-sm font-semibold">Recent enquiries</h2>
             <Link
               href="/app/leads"
               className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-4"
@@ -122,7 +123,7 @@ export default async function DashboardPage() {
         {/* Requires action */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Requires action</h2>
+            <h2 className="text-sm font-semibold">Requires action</h2>
             <Link
               href="/app/leads?status=new"
               className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-4"
@@ -151,8 +152,10 @@ function StatCard({
 }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
       {subtext && (
         <p className="mt-0.5 text-xs text-muted-foreground">{subtext}</p>
       )}
@@ -175,8 +178,9 @@ function LeadMiniTable({
 }) {
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-        {emptyText}
+      <div className="rounded-lg border border-border bg-card px-4 py-10 text-center">
+        <Inbox className="mx-auto h-7 w-7 text-muted-foreground/30" />
+        <p className="mt-2 text-sm text-muted-foreground">{emptyText}</p>
       </div>
     );
   }

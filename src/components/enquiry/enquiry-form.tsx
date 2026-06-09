@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { submitEnquiryAction, type EnquiryState } from "@/app/actions/enquiry";
 import {
   TREATMENT_OPTIONS,
@@ -26,9 +27,7 @@ export function EnquiryForm({ clinicId, clinicName, bookingUrl }: EnquiryFormPro
   if (state.status === "success") {
     return (
       <div className="p-8 text-center space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600 text-xl">
-          ✓
-        </div>
+        <CheckCircle2 className="mx-auto h-11 w-11 text-green-500" />
         <div>
           <h2 className="text-lg font-semibold">Enquiry received</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -43,7 +42,7 @@ export function EnquiryForm({ clinicId, clinicName, bookingUrl }: EnquiryFormPro
             rel="noopener noreferrer"
             className="inline-block rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
           >
-            Book your consultation →
+            Book your consultation &rarr;
           </a>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -190,7 +189,10 @@ export function EnquiryForm({ clinicId, clinicName, bookingUrl }: EnquiryFormPro
       </FormField>
 
       {/* GDPR consent — required */}
-      <div className="space-y-3 pt-1">
+      <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Consent
+        </p>
         <div className="flex items-start gap-3">
           <input
             type="checkbox"

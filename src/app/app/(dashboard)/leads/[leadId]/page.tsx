@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { requireClinicAccess, isClinicAdmin, isPlatformOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/leads/status-badge";
@@ -108,11 +109,12 @@ export default async function LeadDetailPage({
           href="/app/leads"
           className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
-          &larr; Back to leads
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to leads
         </Link>
 
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold">{lead.full_name}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{lead.full_name}</h1>
           <StatusBadge status={lead.status as LeadStatus} />
           {isAnonymised && (
             <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
@@ -252,18 +254,16 @@ export default async function LeadDetailPage({
             {activities.length === 0 ? (
               <p className="text-sm text-muted-foreground">No activity yet.</p>
             ) : (
-              <div className="space-y-0.5">
+              <div>
                 {activities.map((activity, i) => (
-                  <div
-                    key={activity.id}
-                    className={`flex gap-3 py-3 ${
-                      i < activities.length - 1
-                        ? "border-b border-border"
-                        : ""
-                    }`}
-                  >
-                    <ActivityDot type={activity.activity_type as ActivityType} />
-                    <div className="min-w-0 flex-1">
+                  <div key={activity.id} className="flex gap-3">
+                    <div className="flex shrink-0 flex-col items-center">
+                      <ActivityDot type={activity.activity_type as ActivityType} />
+                      {i < activities.length - 1 && (
+                        <div className="mt-1 w-px flex-1 bg-border" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-medium">
                           {ACTIVITY_LABELS[activity.activity_type as ActivityType] ??

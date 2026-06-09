@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import { requireClinicAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/leads/status-badge";
@@ -111,7 +112,7 @@ export default async function LeadsPage({
     <div className="flex-1 space-y-4 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Leads</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
         <span className="text-sm text-muted-foreground">
           {total === 0
             ? "No leads"
@@ -124,10 +125,29 @@ export default async function LeadsPage({
 
       {/* Table or empty state */}
       {!leads || leads.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card px-6 py-16 text-center text-sm text-muted-foreground">
-          {q || status || treatment
-            ? "No leads match your filters."
-            : "No leads yet. Share your enquiry form link to start capturing leads."}
+        <div className="rounded-lg border border-border bg-card px-6 py-16 text-center">
+          <Inbox className="mx-auto h-8 w-8 text-muted-foreground/30" />
+          {q || status || treatment ? (
+            <>
+              <p className="mt-3 text-sm font-medium">No leads match your filters</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Try adjusting your search or filter criteria.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-medium">No enquiries yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Share your enquiry form link to start capturing leads.
+              </p>
+              <Link
+                href="/app/settings"
+                className="mt-4 inline-block text-sm font-medium text-primary hover:underline underline-offset-4"
+              >
+                Find your enquiry form link &rarr;
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -223,7 +243,7 @@ export default async function LeadsPage({
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
       {children}
     </th>
   );

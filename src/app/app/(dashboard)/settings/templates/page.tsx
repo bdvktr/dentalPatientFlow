@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { FileText } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireClinicAdmin } from "@/lib/auth";
 import type { TreatmentType } from "@/types/database";
@@ -37,7 +38,7 @@ export default async function TemplatesPage() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {templates.length === 0
-            ? "No templates yet. Create one to start sending automated follow-ups."
+            ? "No templates yet"
             : `${templates.length} template${templates.length === 1 ? "" : "s"}`}
         </p>
         <Link
@@ -48,18 +49,35 @@ export default async function TemplatesPage() {
         </Link>
       </div>
 
+      {templates.length === 0 && (
+        <div className="rounded-lg border border-border bg-card px-6 py-14 text-center">
+          <FileText className="mx-auto h-8 w-8 text-muted-foreground/30" />
+          <p className="mt-3 text-sm font-medium">No follow-up templates yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create a template to start sending automated follow-up emails to new
+            enquiries.
+          </p>
+          <Link
+            href="/app/settings/templates/new"
+            className="mt-4 inline-block text-sm font-medium text-primary hover:underline underline-offset-4"
+          >
+            Create your first template &rarr;
+          </Link>
+        </div>
+      )}
+
       {templates.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="border-b border-border bg-muted/40">
+            <thead className="border-b border-border bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Treatment</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Subject</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Delay</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden sm:table-cell">Step</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Active</th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hidden sm:table-cell">Treatment</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground hidden md:table-cell">Subject</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Delay</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground hidden sm:table-cell">Step</th>
+                <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</th>
+                <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -82,11 +100,14 @@ export default async function TemplatesPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
-                      className={`inline-block h-2 w-2 rounded-full ${
-                        t.is_active ? "bg-green-500" : "bg-muted-foreground/30"
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        t.is_active
+                          ? "bg-green-50 text-green-700"
+                          : "bg-muted text-muted-foreground"
                       }`}
-                      title={t.is_active ? "Active" : "Inactive"}
-                    />
+                    >
+                      {t.is_active ? "Active" : "Inactive"}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link

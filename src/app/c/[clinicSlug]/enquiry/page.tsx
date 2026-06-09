@@ -45,19 +45,21 @@ export default async function EnquiryPage({
   if (!clinic) notFound();
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-slate-50/60">
       <div className="flex flex-col items-center px-4 py-16 sm:px-6">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-xl">
           {/* Clinic header */}
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-semibold">{clinic.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              {clinic.name}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
               Request a free consultation
             </p>
           </div>
 
           {/* Form card */}
-          <div className="rounded-lg border border-border bg-card shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <EnquiryForm
               clinicId={clinic.id}
               clinicName={clinic.name}
@@ -66,7 +68,7 @@ export default async function EnquiryPage({
           </div>
 
           {/* Safety copy — required per product guidelines */}
-          <p className="mt-6 text-center text-xs text-muted-foreground px-2">
+          <p className="mt-6 text-center text-xs text-slate-400 px-2">
             This form is for consultation enquiries only. For dental emergencies
             please contact your clinic directly or call&nbsp;999.
             Dental PatientFlow AI supports administrative follow-up only —

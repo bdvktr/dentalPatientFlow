@@ -17,7 +17,7 @@ export default async function SettingsLayout({
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Manage your clinic account and follow-up templates.
         </p>

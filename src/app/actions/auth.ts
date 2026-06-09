@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
@@ -53,6 +54,13 @@ export async function signupAction(
 
   const { clinicName, email, password } = parsed.data;
 
+  // Derive origin from request headers so emailRedirectTo works correctly
+  // in both local dev and production without hardcoding any URLs.
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  const origin = `${proto}://${host}`;
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -61,6 +69,10 @@ export async function signupAction(
       // Store clinic name in user metadata so the callback route can
       // create the clinic after email confirmation.
       data: { clinic_name: clinicName },
+      // Route the confirmation email link through the auth callback.
+      // Without this, Supabase falls back to the Site URL root (/?code=...)
+      // instead of /auth/callback?code=...
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
